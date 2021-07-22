@@ -24,8 +24,11 @@ public class VideoRecorder {
     }
 
     public void startRecording(SurfaceView surfaceView, CaptureActivity activity) {
-        ActivityCompat.requestPermissions(activity,
-                new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO}, 1);
+        ActivityCompat.requestPermissions(
+                activity,
+                new String[]{Manifest.permission.CAMERA,
+                        Manifest.permission.RECORD_AUDIO},
+                1);
         if (mediaRecorder != null) mediaRecorder.reset();
         else mediaRecorder = new MediaRecorder();
         //设置录制方向，竖屏时默认是横屏方向(坑)
@@ -71,8 +74,9 @@ public class VideoRecorder {
             }
         }, 0, 1000);
     }
-    public void stopRecording(){
-        isRecording=false;
+
+    public void stopRecording() {
+        isRecording = false;
         if (mediaRecorder != null) {
             try {
                 mediaRecorder.stop();

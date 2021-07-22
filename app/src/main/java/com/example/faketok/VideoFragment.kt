@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
@@ -13,6 +14,9 @@ import com.example.faketok.util.Constant
 import com.shuyu.gsyvideoplayer.builder.GSYVideoOptionBuilder
 import com.shuyu.gsyvideoplayer.listener.GSYSampleCallBack
 import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.CoroutineContext
 import kotlin.properties.Delegates
 
 
@@ -20,14 +24,18 @@ enum class ArgName {
     ARG_NICKNAME, ARG_DESCRIPTION, ARG_LIKECOUNT, ARG_URI, ARG_IMAGE
 }
 
-// frame layout 中放置视频播放空间和图片控件，frame 本身充当监听器
-class VideoFragment : Fragment() {
+// frame layout 中放置视频播放空间和图片控件，frame 本身充当监听器（未完成）
+class VideoFragment : Fragment(), CoroutineScope {
+
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Default
 
     // 控件
     private lateinit var imageView: ImageView
     private lateinit var nicknameView: TextView
     private lateinit var desView: TextView
     private lateinit var likeCountView: TextView
+    private lateinit var progress: ProgressBar
     private lateinit var videoView: StandardGSYVideoPlayer
 
     // bundle 传参
@@ -71,7 +79,15 @@ class VideoFragment : Fragment() {
         this.initImage(view)
         this.initTexts(view)
         this.setVideo(view)
+        this.initProgress(view)
         return view
+    }
+
+    private fun initProgress(view: View?) {
+        progress = view?.findViewById(R.id.progress)!!
+        // 默认状态不可见
+        progress.visibility = View.GONE
+        Log.d(Constant.APP, "VideoFragment, initProgress, ${progress.visibility}")
     }
 
     private fun setVideo(view: View?) {
@@ -81,8 +97,15 @@ class VideoFragment : Fragment() {
         gsyVideoOption.setVideoAllCallBack(object : GSYSampleCallBack() {
             override fun onPrepared(url: String?, vararg objects: Any?) {
                 super.onPrepared(url, *objects)
-                Log.d(Constant.APP, "VideoFragment, video ready, $isActivated")
                 if (!isActivated) videoView.onVideoPause()
+                // 准备好了 封面不可见 progress 不可见 视频可见
+                imageView.visibility = View.GONE
+                progress.visibility = View.GONE
+                videoView.visibility = View.VISIBLE
+                Log.d(
+                    Constant.APP,
+                    "VideoFragment, video ready, $isActivated, ${progress.visibility == View.GONE}"
+                )
             }
 
             override fun onClickBlank(url: String?, vararg objects: Any?) {
@@ -104,14 +127,13 @@ class VideoFragment : Fragment() {
                 "cur"
             )
             // 标题不可见
-            titleTextView.visibility = View.GONE
+            titleTextView?.visibility = View.GONE
             // 返回按钮不可见
-            backButton.visibility = View.GONE
+            backButton?.visibility = View.GONE
             // 循环
             isLooping = true
 
             Log.d(Constant.APP, "VideoFragment, $uri")
-            startPlayLogic()
         }
     }
 
@@ -123,11 +145,14 @@ class VideoFragment : Fragment() {
         imageView.visibility = View.VISIBLE
         // 一次性监听器
         imageView.setOnClickListener {
-            imageView.visibility = View.GONE
-            videoView.visibility = View.VISIBLE
+            // 开始加载 圈圈可见
+            progress.visibility = View.VISIBLE
             isActivated = true
             videoView.startPlayLogic()
-            Log.d(Constant.APP, "VideoFragment, ImageView click, $isActivated")
+            Log.d(
+                Constant.APP,
+                "VideoFragment, ImageView click, $isActivated, ${progress.visibility}"
+            )
         }
     }
 
@@ -138,6 +163,18 @@ class VideoFragment : Fragment() {
         desView.text = description
         likeCountView = view.findViewById(R.id.like_count)!!
         likeCountView.text = likeCount.toString()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        isActivated = false
+        videoView.onVideoPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        isActivated = true
+        videoView.onVideoResume(false)
     }
 
     companion object {
@@ -160,3 +197,5 @@ class VideoFragment : Fragment() {
             }
     }
 }
+
+
