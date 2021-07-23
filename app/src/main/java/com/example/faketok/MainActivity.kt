@@ -42,6 +42,9 @@ class FullScreenVideoActivity : AppCompatActivity(), CoroutineScope {
             setAdapter(adapter)
         }
 
+        // 上下滑动
+        pager.orientation = ViewPager2.ORIENTATION_VERTICAL
+
         findViewById<Button>(R.id.gotoCaptureActivity).setOnClickListener {
             startActivity(Intent(this, CaptureActivity::class.java))
         }

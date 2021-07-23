@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
+import com.bumptech.glide.request.RequestOptions
 import com.example.faketok.util.Constant
 import com.shuyu.gsyvideoplayer.builder.GSYVideoOptionBuilder
 import com.shuyu.gsyvideoplayer.listener.GSYSampleCallBack
@@ -21,7 +22,7 @@ import kotlin.properties.Delegates
 
 
 enum class ArgName {
-    ARG_NICKNAME, ARG_DESCRIPTION, ARG_LIKECOUNT, ARG_URI, ARG_IMAGE
+    ARG_NICKNAME, ARG_DESCRIPTION, ARG_LIKECOUNT, ARG_URI, ARG_IMAGE, ARG_AVATAR
 }
 
 // frame layout 中放置视频播放空间和图片控件，frame 本身充当监听器（未完成）
@@ -31,6 +32,7 @@ class VideoFragment : Fragment(), CoroutineScope {
         get() = Dispatchers.Default
 
     // 控件
+    private lateinit var avatarView: ImageView
     private lateinit var imageView: ImageView
     private lateinit var nicknameView: TextView
     private lateinit var desView: TextView
@@ -44,6 +46,7 @@ class VideoFragment : Fragment(), CoroutineScope {
     private var likeCount by Delegates.notNull<Long>()
     private lateinit var uri: Uri
     private lateinit var image: Uri
+    private lateinit var avatar: Uri
 
     // video 状态, 用户指令
     private var isActivated: Boolean = false
@@ -66,6 +69,7 @@ class VideoFragment : Fragment(), CoroutineScope {
             likeCount = it.getString(ArgName.ARG_LIKECOUNT.toString())!!.toLong()
             uri = Uri.parse(it.getString(ArgName.ARG_URI.toString())!!)
             image = Uri.parse(it.getString(ArgName.ARG_IMAGE.toString())!!)
+            avatar = Uri.parse(it.getString(ArgName.ARG_AVATAR.toString())!!)
         }
 
         Log.d(Constant.APP, "VideoFragment, onCreate finishes")
@@ -137,7 +141,9 @@ class VideoFragment : Fragment(), CoroutineScope {
         }
     }
 
+    // avatar 封面
     private fun initImage(view: View?) {
+        // 封面
         imageView = view?.findViewById(R.id.image)!!
         context?.let {
             Glide.with(it).load(image).transition(withCrossFade()).into(imageView)
@@ -154,6 +160,13 @@ class VideoFragment : Fragment(), CoroutineScope {
                 "VideoFragment, ImageView click, $isActivated, ${progress.visibility}"
             )
         }
+        // avatar
+        avatarView = view.findViewById(R.id.avatar)
+        context?.let {
+            Glide.with(it).load(avatar).transition(withCrossFade())
+                .apply(RequestOptions.circleCropTransform())
+                .into(avatarView)
+        }
     }
 
     private fun initTexts(view: View?) {
@@ -162,7 +175,8 @@ class VideoFragment : Fragment(), CoroutineScope {
         desView = view.findViewById(R.id.description)!!
         desView.text = description
         likeCountView = view.findViewById(R.id.like_count)!!
-        likeCountView.text = likeCount.toString()
+        val cur = likeCount / 1000
+        likeCountView.text = "${cur}k"
     }
 
     override fun onPause() {
@@ -189,7 +203,8 @@ class VideoFragment : Fragment(), CoroutineScope {
                         Pair(ArgName.ARG_LIKECOUNT, info.likecount),
                         Pair(ArgName.ARG_NICKNAME, info.nickname),
                         Pair(ArgName.ARG_URI, info.feedurl),
-                        Pair(ArgName.ARG_IMAGE, info.thumbnails)
+                        Pair(ArgName.ARG_IMAGE, info.thumbnails),
+                        Pair(ArgName.ARG_AVATAR, info.avatar)
                     ).forEach {
                         putString(it.first.toString(), it.second.toString())
                     }
